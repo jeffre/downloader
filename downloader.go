@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-type downloader struct {
+type Downloader struct {
 	Threads     int
 	destDir     string
 	jobsChan    chan job
@@ -30,23 +30,25 @@ type result struct {
 	err  error
 }
 
-var errDuplicateFilename = errors.New("duplicate filename")
+var ErrDuplicateFilename = errors.New("duplicate filename")
 
-func New() *downloader {
-	d := &downloader{}
+// New provides a *Downloader which defaults to using 3 threads for downloading
+// and the current directory as DestDir.
+func New() *Downloader {
+	d := &Downloader{}
 	d.Threads = 3
 	d.DestDir(".")
 	return d
 }
 
-func (d *downloader) queueJobs() {
+func (d *Downloader) queueJobs() {
 	for _, job := range d.jobs {
 		d.jobsChan <- job
 	}
 	close(d.jobsChan)
 }
 
-func (d *downloader) receiveResults() {
+func (d *Downloader) receiveResults() {
 	for result := range d.resultsChan {
 		if result.err != nil {
 			fmt.Fprintf(os.Stderr, "Error downloading from %q: %q\n", result.url, result.err)
@@ -58,7 +60,7 @@ func (d *downloader) receiveResults() {
 	d.done <- true
 }
 
-func (d *downloader) startWorkers(workers int, jobs chan job) {
+func (d *Downloader) startWorkers(workers int, jobs chan job) {
 	var wg sync.WaitGroup
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
@@ -68,7 +70,7 @@ func (d *downloader) startWorkers(workers int, jobs chan job) {
 	close(d.resultsChan)
 }
 
-func (d *downloader) worker(wg *sync.WaitGroup, jobs chan job, results chan result) {
+func (d *Downloader) worker(wg *sync.WaitGroup, jobs chan job, results chan result) {
 	for job := range jobs {
 		size, err := d.download(job.url, job.filename)
 		output := result{job, size, err}
@@ -77,7 +79,7 @@ func (d *downloader) worker(wg *sync.WaitGroup, jobs chan job, results chan resu
 	wg.Done()
 }
 
-func (d *downloader) download(url, filename string) (int64, error) {
+func (d *Downloader) download(url, filename string) (int64, error) {
 
 	// Get the data
 	resp, err := http.Get(url)
@@ -105,7 +107,9 @@ func (d *downloader) download(url, filename string) (int64, error) {
 	return bytes, err
 }
 
-func (d *downloader) Run() {
+// Run starts the concurrent downloads and returns once all downloads are
+// finished.
+func (d *Downloader) Run() {
 
 	d.jobsChan = make(chan job, d.Threads)
 	d.resultsChan = make(chan result, d.Threads)
@@ -125,11 +129,12 @@ func (d *downloader) Run() {
 }
 
 // Add queues a url to be downloaded to filename. It can be called multiple
-// times. An error is returned if the same filename is provided more than once.
-func (d *downloader) Add(url, filename string) error {
+// times. An error (ErrDuplicateFilename) is returned if the same filename is
+// provided more than once.
+func (d *Downloader) Add(url, filename string) error {
 	for _, job := range d.jobs {
 		if job.filename == filename {
-			return errDuplicateFilename
+			return ErrDuplicateFilename
 		}
 	}
 	d.jobs = append(d.jobs, job{url, filename})
@@ -137,8 +142,8 @@ func (d *downloader) Add(url, filename string) error {
 }
 
 // DestDir sets the dir where downloads will be written. If dir does not exist
-// it will return an error
-func (d *downloader) DestDir(dir string) error {
+// it will return a PathError.
+func (d *Downloader) DestDir(dir string) error {
 	if _, err := os.Stat(dir); err != nil {
 		return err
 	}

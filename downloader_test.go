@@ -47,7 +47,7 @@ func TestAdd(t *testing.T) {
 		if err := d.Add(server.URL, "_dup1_"); err != nil {
 			t.Error(err)
 		}
-		if err := d.Add(server.URL, "_dup1_"); !errors.Is(err, errDuplicateFilename) {
+		if err := d.Add(server.URL, "_dup1_"); !errors.Is(err, ErrDuplicateFilename) {
 			t.Error(err)
 		}
 	})
@@ -92,6 +92,18 @@ func TestRun(t *testing.T) {
 			t.Errorf("got %q wanted %q\n", got, httpBody)
 		}
 	}
+}
+
+func ExampleNew() {
+	d := New()
+	d.Threads = 5
+	d.DestDir("/tmp")
+	d.Add("http://httpbin.org/bytes/6", "file1")
+	d.Add("http://httpbin.org/bytes/6", "file2")
+	d.Add("http://httpbin.org/bytes/6", "file3")
+	d.Add("http://httpbin.org/bytes/6", "file4")
+	d.Add("http://httpbin.org/bytes/6", "file5")
+	d.Run()
 }
 
 var httpBody = "Hello"
