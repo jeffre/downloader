@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/jeffre/download"
+	download "github.com/jeffre/downloader"
 )
 
 func main() {
