@@ -70,14 +70,14 @@ func (d *downloader) startWorkers(workers int, jobs chan job) {
 
 func (d *downloader) worker(wg *sync.WaitGroup, jobs chan job, results chan result) {
 	for job := range jobs {
-		size, err := d.download(job.url)
+		size, err := d.download(job.url, job.filename)
 		output := result{job, size, err}
 		results <- output
 	}
 	wg.Done()
 }
 
-func (d *downloader) download(url string) (int64, error) {
+func (d *downloader) download(url, filename string) (int64, error) {
 
 	// Get the data
 	resp, err := http.Get(url)
@@ -93,7 +93,6 @@ func (d *downloader) download(url string) (int64, error) {
 	}
 
 	// Create the file
-	filename := path.Base(url)
 	fullPath := path.Join(d.destDir, filename)
 	file, err := os.Create(fullPath)
 	if err != nil {

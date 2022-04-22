@@ -3,9 +3,11 @@ package download
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"testing"
 	"time"
 )
@@ -70,12 +72,26 @@ func TestRun(t *testing.T) {
 		t.Error(err)
 	}
 
-	for i := 0; i < 10; i++ {
+	fileCount := 10
+
+	for i := 0; i < fileCount; i++ {
 		d.Add(server.URL, fmt.Sprintf("_testrun_%v", i))
 	}
 	d.Run()
 
 	// Check the dir/_testrun_ exists and its contents are httpBody
+	for i := 0; i < fileCount; i++ {
+		path := path.Join(dir, fmt.Sprintf("_testrun_%v", i))
+		bytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			t.Error(err)
+		}
+		got := string(bytes)
+
+		if got != httpBody {
+			t.Errorf("got %q wanted %q\n", got, httpBody)
+		}
+	}
 }
 
 var httpBody = "Hello"
