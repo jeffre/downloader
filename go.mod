@@ -1,3 +1,3 @@
-module github.com/jeffre/download
+module github.com/jeffre/downloader
 
 go 1.16

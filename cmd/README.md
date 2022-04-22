@@ -1,6 +1,6 @@
 ## Installation
 1. Install [go](https://go.dev/dl/)
-1. Run `go get github.com/jeffre/download`
+1. Run `go get github.com/jeffre/downloader`
 
 ## Usage
 Downloader takes a list of urls as arguments and downloads them. The default 
